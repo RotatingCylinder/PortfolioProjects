@@ -61,7 +61,7 @@ def vigenere_decrypt(encrypted_msg, key, alphabet_size = 26,
 
     return decrypted_msg
 
-# example of the cipher
+# example of the cipher d
 
 result = vigenere_encrypt("I LOOVE PEANUTS","BANANA")
 decrypt = vigenere_decrypt(result, "BANANA")
