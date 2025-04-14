@@ -1,6 +1,7 @@
 import socketserver
 import threading
 import sys
+from datetime import datetime
 
 # Validating port number
 port_num = 0
@@ -16,38 +17,80 @@ client_list = []
 class Server(socketserver.BaseRequestHandler):
 
     # Overridden from handler
+    # handle function tells server how to respond to client
     def handle(self):
         client = self.request
+        message_time = datetime.now().strftime("%H:%M")
+
+        # Telling client to send username
+        client.sendall(bytes("username", encoding='utf-8'))
+        username = client.recv(1024).decode('utf-8')
+
+        print(f"[{message_time}] {username} joined the server.")
+
+        # Sending welcome message
+        client_list.append(client)
+        client.sendall(bytes(f"Welcome {username} to this TCP chatroom. You can type exit to leave.", encoding='utf-8'))
+
 
         # While loop to continually receive messages from client
         while True:
+            try:
+                # Getting current time
+                message_time = datetime.now().strftime("%H:%M")
 
-            # If client is new, add to client_list and give welcome message
-            if self.client_address not in client_list:
-                client_list.append(self.client_address)
-                client.sendall(bytes("Welcome to this TCP chatroom. You can type exit to leave.", encoding='utf-8'))
-                print(f"{self.client_address} joined the server.")
-                continue
+                # Receive and print next message from client
+                message = client.recv(1024).decode('utf-8')
+                if not message:
+                    break
 
-            # Receive and print next message from client
-            message = client.recv(1024).decode('utf-8')
-            print(f"{self.client_address} sent: {message}")
+                print(message)
 
-            # Check for graceful exit
-            if message.strip().upper() == "EXIT":
-                client.sendall(bytes("Exiting server...",encoding = 'utf-8'))
+                # Check for graceful exit
+                if message.strip().upper() == "EXIT":
+                    break
+            except:
                 break
 
-        # If while loop is exited, then server has stopped receiving messages and is shutting down
-        # MUST CHANGE FOR MULTI-CLIENT IMPLEMENTATION
-        print("Server shutting down...")
-        sys.exit()
+        print(f"[{message_time}]{username} has left the chat.")
+        #client.sendall(bytes(f"[{message_time}]{username} has left the chat.", encoding='utf-8'))
+        client_list.remove(client)
+        client.close()
+
+
+def message_client(server):
+
+    while True:
+        message_time = datetime.now().strftime("%H:%M")
+        message = input()
+        print(f"[{message_time}]Server: {message}")
+
+        if message.upper().strip() == "EXIT":
+            print(f"[{message_time}]Server shutting down...")
+
+            for client in client_list:
+                try:
+                    client.sendall(bytes(f"[{message_time}]Server: {message}",encoding = 'utf-8'))
+                    client.close()
+                except:
+                    pass
+
+            server.shutdown()
+            server.server_close()
+            break
+
+        for client in client_list:
+            try:
+                client.sendall(bytes(f"[{message_time}]Server: {message}",encoding = 'utf-8'))
+            except:
+                break
 
 if __name__ == "__main__":
+    time = datetime.now().strftime("%H:%M")
+    print(f"[{time}] Server created at port: {port_num}, host: {localhost}")
 
-    # With statement ensures resources allocated to socketserver are released
-    with socketserver.TCPServer((localhost, port_num), Server) as server:
-        print(f"Server started at port: {port_num}, host: {localhost}")
-        server.serve_forever() # Starts the server
-        handle_thread = threading.Thread(target=Server.handle) # Thread for handle
-        handle_thread.start()
+    server = socketserver.ThreadingTCPServer((localhost, port_num), Server)
+    threading.Thread(target=message_client,daemon=True, args = (server,)).start()
+    server.serve_forever()
+
+

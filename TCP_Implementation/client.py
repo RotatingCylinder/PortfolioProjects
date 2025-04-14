@@ -1,6 +1,7 @@
 import sys
 import threading
 import socket
+from datetime import datetime
 
 # Validating port number
 port_num = 0
@@ -17,11 +18,16 @@ except:
     print("Connection refused, please try with valid port number.")
     sys.exit(0)
 
+username = input("Please enter your username: ")
+
 # Writing to server
 def send_message():
     while True:
-        message = input("Client: ")
-        client.send(message.encode('utf-8'))
+        message_time = datetime.now().strftime("%H:%M")
+
+        message = input()
+        client.send(f"[{message_time}]{username}: {message}".encode('utf-8'))
+        print(f"[{message_time}]{username}: {message}")
 
         # Shutdown client when graceful exit occurs
         if message.upper().strip() == "EXIT":
@@ -34,7 +40,15 @@ def receive():
         # Exception forcefully breaks out of loop when server is shut down
         try:
             message = client.recv(1024).decode('utf-8')
-            print(message)
+
+            # Sending client username if server asks for it
+            if message == "username":
+                client.send(username.encode('utf-8'))
+            elif message.upper().strip() == "EXIT":
+                client.close()
+                sys.exit()
+            else:
+                print(message)
         except:
             break
 
