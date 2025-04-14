@@ -1,4 +1,4 @@
-
+# Copied straight from python documentation, please ignore 
 from tkinter import *
 from tkinter import ttk
 
