@@ -1,6 +1,5 @@
 import socketserver
 import threading
-import sys
 from datetime import datetime
 
 # Validating port number
@@ -26,22 +25,19 @@ class Server(socketserver.BaseRequestHandler):
         client.sendall(bytes("username", encoding='utf-8'))
         username = client.recv(1024).decode('utf-8')
 
-        print(f"[{message_time}] {username} joined the server.")
+        print(f"[{message_time}]{username} joined the server.")
 
         # Sending welcome message
         client_list.append(client)
         client.sendall(bytes(f"Welcome {username} to this TCP chatroom. You can type exit to leave.", encoding='utf-8'))
 
-
         # While loop to continually receive messages from client
         while True:
             try:
-                # Getting current time
-                message_time = datetime.now().strftime("%H:%M")
-
                 # Receive and print next message from client
                 message = client.recv(1024).decode('utf-8')
                 if not message:
+                    client.close()
                     break
 
                 print(message)
@@ -53,10 +49,8 @@ class Server(socketserver.BaseRequestHandler):
                 break
 
         print(f"[{message_time}]{username} has left the chat.")
-        #client.sendall(bytes(f"[{message_time}]{username} has left the chat.", encoding='utf-8'))
         client_list.remove(client)
         client.close()
-
 
 def message_client(server):
 
@@ -71,6 +65,7 @@ def message_client(server):
             for client in client_list:
                 try:
                     client.sendall(bytes(f"[{message_time}]Server: {message}",encoding = 'utf-8'))
+                    client.sendall(bytes(f"[{message_time}]Server shutting down...",encoding = 'utf-8'))
                     client.close()
                 except:
                     pass
@@ -86,11 +81,9 @@ def message_client(server):
                 break
 
 if __name__ == "__main__":
-    time = datetime.now().strftime("%H:%M")
-    print(f"[{time}] Server created at port: {port_num}, host: {localhost}")
+    message_time = datetime.now().strftime("%H:%M")
+    print(f"[{message_time}]Server created at port: {port_num}, host: {localhost}")
 
     server = socketserver.ThreadingTCPServer((localhost, port_num), Server)
-    threading.Thread(target=message_client,daemon=True, args = (server,)).start()
+    threading.Thread(target=message_client, daemon = True, args = (server,)).start()
     server.serve_forever()
-
-

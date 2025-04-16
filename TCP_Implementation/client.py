@@ -22,31 +22,42 @@ username = input("Please enter your username: ")
 
 # Writing to server
 def send_message():
+    # Exception forcefully breaks out of loop when server is shut down
     while True:
-        message_time = datetime.now().strftime("%H:%M")
+        try:
+            # Check for client connection
+            if client is None:
+                break
 
-        message = input()
-        client.send(f"[{message_time}]{username}: {message}".encode('utf-8'))
-        print(f"[{message_time}]{username}: {message}")
+            # Send message to server
+            message_time = datetime.now().strftime("%H:%M")
+            message = input()
+            client.send(f"[{message_time}]{username}: {message}".encode('utf-8'))
+            print(f"[{message_time}]{username}: {message}")
 
-        # Shutdown client when graceful exit occurs
-        if message.upper().strip() == "EXIT":
-            client.close()
-            sys.exit(0)
+            # Shutdown client when graceful exit occurs
+            if message.upper().strip() == "EXIT":
+                client.close()
+                break
+        except:
+            break
 
 # Receiving from server
 def receive():
     while True:
         # Exception forcefully breaks out of loop when server is shut down
         try:
+            # Receive message
             message = client.recv(1024).decode('utf-8')
+
+            # If server is sending "", then server has shutdown
+            if not message:
+                client.close()
+                break
 
             # Sending client username if server asks for it
             if message == "username":
                 client.send(username.encode('utf-8'))
-            elif message.upper().strip() == "EXIT":
-                client.close()
-                sys.exit()
             else:
                 print(message)
         except:
@@ -54,7 +65,7 @@ def receive():
 
 
 # Creating and starting threads for receive and send_message functions
-# Allow client to send to and receive from server concurrently
+# Allows client to send to and receive from server concurrently
 client_receive_thread = threading.Thread(target=receive)
 client_message_thread = threading.Thread(target=send_message)
 
