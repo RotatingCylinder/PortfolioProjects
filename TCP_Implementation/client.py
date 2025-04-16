@@ -6,24 +6,29 @@ from datetime import datetime
 # Validating port number
 port_num = 0
 while port_num < 1025 or port_num > 65535:
-    port_num = int(input("Please enter valid port number (1025-65535): "))
+    try:
+        port_num = int(input("Please enter valid port number (1025-65535): "))
+    except ValueError:
+        print("Please enter an integer")
 
+# "localhost" connects to local computer
 localhost = "localhost"
 
 # Connecting to server
 try:
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((localhost, port_num))
-except:
+except ConnectionRefusedError:
     print("Connection refused, please try with valid port number.")
-    sys.exit(0)
+    sys.exit()
 
-username = input("Please enter your username: ")
+# Asking for user ID
+ID = input("Please enter your user ID: ")
 
 # Writing to server
 def send_message():
-    # Exception forcefully breaks out of loop when server is shut down
     while True:
+        # Exception forcefully breaks out of loop when server is shut down
         try:
             # Check for client connection
             if client is None:
@@ -32,8 +37,8 @@ def send_message():
             # Send message to server
             message_time = datetime.now().strftime("%H:%M")
             message = input()
-            client.send(f"[{message_time}]{username}: {message}".encode('utf-8'))
-            print(f"[{message_time}]{username}: {message}")
+            client.send(f"[{message_time}]{ID}: {message}".encode('utf-8'))
+            print(f"[{message_time}]{ID}: {message}")
 
             # Shutdown client when graceful exit occurs
             if message.upper().strip() == "EXIT":
@@ -56,8 +61,8 @@ def receive():
                 break
 
             # Sending client username if server asks for it
-            if message == "username":
-                client.send(username.encode('utf-8'))
+            if message == "ID":
+                client.send(ID.encode('utf-8'))
             else:
                 print(message)
         except:
