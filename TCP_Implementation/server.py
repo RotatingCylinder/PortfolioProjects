@@ -50,6 +50,7 @@ class TCPServer(socketserver.BaseRequestHandler):
                 break
 
         # Shutdown client connection
+        message_time = datetime.now().strftime("%H:%M")
         print(f"[{message_time}]{user_id} has left the chat.")
         client_list.remove(client)
         client.close()
@@ -66,10 +67,12 @@ def message_client(server):
 
         # Check for graceful exit
         if message.upper().strip() == "EXIT":
+            message_time = datetime.now().strftime("%H:%M")
             print(f"[{message_time}]Server shutting down...")
 
             for client in client_list:
                 try:
+                    message_time = datetime.now().strftime("%H:%M")
                     # Sending shut down message
                     client.sendall(bytes(f"[{message_time}]Server: {message}",encoding = 'utf-8'))
                     client.sendall(bytes(f"[{message_time}]Server shutting down...",encoding = 'utf-8'))
@@ -96,5 +99,5 @@ if __name__ == "__main__":
 
     # Starting server and starting thread for message_client
     server = socketserver.ThreadingTCPServer((localhost, port_num), TCPServer)
-    threading.Thread(target=message_client, daemon = True, args = (server,)).start()
+    threading.Thread(target=message_client, args = (server,)).start()
     server.serve_forever()
